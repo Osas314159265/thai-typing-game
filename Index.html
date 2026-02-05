@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมฝึกพิมพ์ภาษาไทย</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+        }
+        
+        .cursor {
+            background-color: #e2e8f0;
+            border-bottom: 3px solid #3b82f6;
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .correct {
+            color: #15803d; /* Green 700 */
+        }
+
+        .incorrect-shake {
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+            background-color: #fee2e2; /* Red 100 */
+            color: #b91c1c; /* Red 700 */
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .7; }
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Hide scrollbar for clean look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 select-none">
+
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden relative">
+        
+        <!-- Header -->
+        <div class="bg-green-600 p-6 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">ฝึกพิมพ์ภาษาไทย</h1>
+                <p class="text-green-100 text-sm mt-1">บทความ: ความสำคัญของภาษาไทย</p>
+            </div>
+            <div class="text-right hidden md:block">
+                <div class="text-sm opacity-80">ความแม่นยำปัจจุบัน</div>
+                <div id="live-accuracy" class="text-2xl font-bold">100%</div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="p-8 relative min-h-[400px] flex flex-col">
+            
+            <!-- Instructions -->
+            <div id="start-overlay" class="absolute inset-0 z-10 bg-white/90 flex flex-col items-center justify-center text-center p-4">
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-green-100 max-w-md">
+                    <div class="text-6xl mb-4">⌨️</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">พร้อมไหม?</h2>
+                    <p class="text-gray-600 mb-6">พิมพ์ตามข้อความที่ปรากฏ หากพิมพ์ผิดต้องแก้ใหม่ให้ถูก</p>
+                    <button onclick="startGame()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full transition transform hover:scale-105 shadow-md">
+                        เริ่มเกม
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Overlay (Hidden by default) -->
+            <div id="result-overlay" class="hidden absolute inset-0 z-20 bg-white/95 flex flex-col items-center justify-center text-center p-4 backdrop-blur-sm">
+                <div class="bg-white p-8 rounded-2xl shadow-2xl border border-green-200 max-w-lg w-full transform transition-all scale-100">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">ยอดเยี่ยม! 🎉</h2>
+                    
+                    <div class="grid grid-cols-3 gap-4 mb-8">
+                        <div class="bg-blue-50 p-4 rounded-xl">
+                            <div class="text-blue-600 text-sm font-semibold uppercase">ความเร็ว</div>
+                            <div class="text-3xl font-bold text-blue-800" id="result-wpm">0</div>
+                            <div class="text-xs text-blue-500">คำ/นาที</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl">
+                            <div class="text-green-600 text-sm font-semibold uppercase">ความแม่นยำ</div>
+                            <div class="text-3xl font-bold text-green-800" id="result-accuracy">0%</div>
+                            <div class="text-xs text-green-500">ถูกต้อง</div>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-xl">
+                            <div class="text-orange-600 text-sm font-semibold uppercase">เวลา</div>
+                            <div class="text-3xl font-bold text-orange-800" id="result-time">0s</div>
+                            <div class="text-xs text-orange-500">วินาที</div>
+                        </div>
+                    </div>
+
+                    <button onclick="resetGame()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        เล่นอีกครั้ง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Typing Content -->
+            <div id="text-container" class="text-2xl leading-relaxed text-gray-400 font-medium break-words outline-none relative" tabindex="0">
+                <!-- Spans will be injected here -->
+            </div>
+
+            <!-- Footer Stats -->
+            <div class="mt-auto pt-8 flex justify-between items-end border-t border-gray-100">
+                <div class="text-sm text-gray-500">
+                    <span id="progress-text">0</span> / <span id="total-text">0</span> ตัวอักษร
+                </div>
+                <div class="flex gap-2 text-xs text-gray-400">
+                    <span>กด Shift ค้างไว้เพื่อพิมพ์อักษรแถวบน</span>
+                    <span>•</span>
+                    <span>ห้ามพิมพ์ผิด</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // The text content from user prompt
+        const textToType = `การใช้ภาษาไทยอย่างถูกต้องช่วยให้เราสื่อสารได้อย่างชัดเจนและเป็นระเบียบ นักเรียนควรหมั่นตรวจสอบการสะกดคำและการใช้วรรณยุกต์ทุกครั้งก่อนส่งงาน เพราะคำที่สะกดผิดอาจทำให้ผู้อ่านเข้าใจคลาดเคลื่อนได้ การฝึกอ่านหนังสือและเขียนบ่อย ๆ จะช่วยให้จำรูปคำได้ดีขึ้นและลดข้อผิดพลาดในการเขียน
+
+อีกสิ่งหนึ่งที่สำคัญคือการเลือกใช้คำให้เหมาะสมกับสถานการณ์ เช่น การเขียนรายงานควรใช้ภาษาทางการ ส่วนการพูดคุยกับเพื่อนสามารถใช้ภาษาที่เป็นกันเองได้ การรู้จักปรับระดับภาษาให้ถูกต้องจะทำให้การสื่อสารราบรื่นและทำให้ผู้อื่นเข้าใจความหมายที่เราต้องการสื่อได้อย่างชัดเจน`;
+
+        // State variables
+        let currentIndex = 0;
+        let mistakes = 0;
+        let startTime = null;
+        let endTime = null;
+        let isGameActive = false;
+        let timerInterval = null;
+
+        // DOM Elements
+        const textContainer = document.getElementById('text-container');
+        const resultOverlay = document.getElementById('result-overlay');
+        const startOverlay = document.getElementById('start-overlay');
+        const liveAccuracyEl = document.getElementById('live-accuracy');
+        const progressTextEl = document.getElementById('progress-text');
+        const totalTextEl = document.getElementById('total-text');
+
+        // Initialize display
+        function initDisplay() {
+            textContainer.innerHTML = '';
+            // Split text including newlines
+            const chars = textToType.split('');
+            
+            chars.forEach((char, index) => {
+                const span = document.createElement('span');
+                span.innerText = char;
+                span.dataset.char = char;
+                
+                // Handle newlines visibly and structurally
+                if (char === '\n') {
+                    span.classList.add('block', 'h-4'); // Add height for double newline effect
+                    span.innerHTML = '&crarr;'; // Visual carriage return symbol (optional)
+                    span.classList.add('text-gray-200', 'text-sm', 'align-middle', 'opacity-50'); 
+                    // Actually, for proper flow, we might just want <br> behavior but we need spans for cursor logic.
+                    // Let's style the newline span to break the line.
+                    span.style.display = 'block'; 
+                    span.style.height = '1em';
+                    span.style.marginTop = '0.5em'; // Spacing for paragraphs
+                    span.innerText = ''; // Hide text
+                }
+                
+                textContainer.appendChild(span);
+            });
+
+            totalTextEl.innerText = chars.length;
+            updateCursor();
+        }
+
+        function updateCursor() {
+            const spans = textContainer.querySelectorAll('span');
+            spans.forEach(s => {
+                s.classList.remove('cursor', 'bg-red-100', 'incorrect-shake');
+            });
+
+            if (currentIndex < spans.length) {
+                const currentSpan = spans[currentIndex];
+                currentSpan.classList.add('cursor');
+                
+                // Scroll into view if needed
+                if(currentIndex > 0 && currentIndex % 20 === 0) {
+                   currentSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        function startGame() {
+            startOverlay.classList.add('hidden');
+            resultOverlay.classList.add('hidden');
+            textContainer.focus();
+            
+            // Reset state
+            currentIndex = 0;
+            mistakes = 0;
+            startTime = null;
+            isGameActive = true;
+            
+            initDisplay();
+            updateLiveStats();
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+        function finishGame() {
+            isGameActive = false;
+            endTime = new Date();
+            
+            const timeDiff = (endTime - startTime) / 1000; // in seconds
+            const minutes = timeDiff / 60;
+            
+            // Standard WPM calculation: (Characters / 5) / Minutes
+            const grossWPM = Math.round((textToType.length / 5) / minutes);
+            // Net WPM usually subtracts errors, but since we force correction, Gross is fine, 
+            // or we penalize slightly. Let's stick to Gross speed for simplicity as they fixed errors.
+            
+            const accuracy = Math.round(((textToType.length - mistakes) / textToType.length) * 100);
+            
+            // Update Results
+            document.getElementById('result-wpm').innerText = isNaN(grossWPM) || !isFinite(grossWPM) ? 0 : grossWPM;
+            document.getElementById('result-accuracy').innerText = `${Math.max(0, accuracy)}%`;
+            document.getElementById('result-time').innerText = Math.round(timeDiff);
+            
+            resultOverlay.classList.remove('hidden');
+        }
+
+        function updateLiveStats() {
+            progressTextEl.innerText = currentIndex;
+            
+            if (currentIndex > 0) {
+                const totalAttempts = currentIndex + mistakes;
+                const acc = Math.round((currentIndex / totalAttempts) * 100);
+                liveAccuracyEl.innerText = `${acc}%`;
+            } else {
+                liveAccuracyEl.innerText = '100%';
+            }
+        }
+
+        // Event Listener for Typing
+        document.addEventListener('keydown', (e) => {
+            if (!isGameActive) return;
+
+            // Ignore modifier keys
+            if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta' || e.key === 'CapsLock') return;
+
+            // Start timer on first valid keypress
+            if (!startTime) {
+                startTime = new Date();
+            }
+
+            const spans = textContainer.querySelectorAll('span');
+            const targetChar = textToType[currentIndex];
+            const currentSpan = spans[currentIndex];
+
+            let inputChar = e.key;
+
+            // Handle Enter key for newlines
+            if (inputChar === 'Enter') {
+                inputChar = '\n';
+            }
+
+            // Check correctness
+            if (inputChar === targetChar) {
+                // Correct
+                currentSpan.classList.remove('cursor', 'incorrect-shake');
+                currentSpan.classList.add('correct');
+                
+                currentIndex++;
+                
+                if (currentIndex >= textToType.length) {
+                    finishGame();
+                } else {
+                    updateCursor();
+                }
+            } else {
+                // Incorrect
+                mistakes++;
+                currentSpan.classList.add('incorrect-shake');
+                
+                // Remove shake class after animation to allow re-triggering
+                setTimeout(() => {
+                    if (currentSpan) currentSpan.classList.remove('incorrect-shake');
+                }, 300);
+            }
+            
+            updateLiveStats();
+        });
+
+        // Prevent scrolling with Spacebar if it's the target key (though Space is usually handled by browser default, we want to be safe)
+        window.addEventListener('keydown', function(e) {
+            if(e.key === " " && e.target === document.body) {
+                e.preventDefault();
+            }
+        });
+
+        // Initial setup visual only
+        initDisplay();
+
+    </script>
+</body>
+</html>
